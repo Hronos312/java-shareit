@@ -4,16 +4,16 @@ import lombok.Data;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class Booking {
 
     private Long id;
-    private LocalDate start;
-    private LocalDate end;
+    private LocalDateTime start;
+    private LocalDateTime end;
     private Item item;
     private User booker;
-    private BookingStatus bookingStatus;
+    private BookingStatus status;
 
 }
