@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class UserRepository {
 
     private final Map<Long, User> users = new ConcurrentHashMap<>();
-    private AtomicLong nextId = new AtomicLong(1);
+    private final  AtomicLong nextId = new AtomicLong(1);
 
     public User save(User user) {
         if (user.getId() == null) {

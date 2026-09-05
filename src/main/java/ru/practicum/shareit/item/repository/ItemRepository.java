@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ItemRepository {
 
     private final Map<Long, Item> items = new ConcurrentHashMap<>();
-    private AtomicLong nextId = new AtomicLong(1);
+    private final  AtomicLong nextId = new AtomicLong(1);
 
     public Item save(Item item) {
         if (item.getId() == null) {
