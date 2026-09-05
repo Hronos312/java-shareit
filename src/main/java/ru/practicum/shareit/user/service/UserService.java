@@ -53,6 +53,10 @@ public class UserService {
     public User update(Long id, User updatedUser) {
         User user = findById(id);
 
+        if (updatedUser.getName() != null && updatedUser.getName().isBlank()) {
+            throw new ValidationException("Имя пользователя не может быть пустым");
+        }
+
         if (updatedUser.getEmail() != null) {
             validateEmail(updatedUser.getEmail());
 
@@ -61,12 +65,14 @@ public class UserService {
             if (userWithSameEmail.isPresent() && !userWithSameEmail.get().getId().equals(id)) {
                 throw new DuplicatedDataException("Пользователь с таким email уже существует");
             }
-
-            user.setEmail(updatedUser.getEmail());
         }
 
         if (updatedUser.getName() != null) {
             user.setName(updatedUser.getName());
+        }
+
+        if (updatedUser.getEmail() != null) {
+            user.setEmail(updatedUser.getEmail());
         }
 
         return userRepository.save(user);

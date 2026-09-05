@@ -69,19 +69,13 @@ public class ItemServiceImpl implements ItemService {
             throw new NotFoundException("Пользователь с id " + userId + " не является владельцем вещи");
         }
 
-        if (updatedItem.getName() != null) {
-            if (updatedItem.getName().isBlank()) {
-                throw new ValidationException("Название вещи не может быть пустым");
-            }
+        validateItemForUpdate(updatedItem);
 
+        if (updatedItem.getName() != null) {
             item.setName(updatedItem.getName());
         }
 
         if (updatedItem.getDescription() != null) {
-            if (updatedItem.getDescription().isBlank()) {
-                throw new ValidationException("Описание вещи не может быть пустым");
-            }
-
             item.setDescription(updatedItem.getDescription());
         }
 
@@ -103,6 +97,16 @@ public class ItemServiceImpl implements ItemService {
 
         if (item.getAvailable() == null) {
             throw new ValidationException("Необходимо указать доступность вещи для аренды");
+        }
+    }
+
+    private void validateItemForUpdate(Item item) {
+        if (item.getName() != null && item.getName().isBlank()) {
+            throw new ValidationException("Название вещи не может быть пустым");
+        }
+
+        if (item.getDescription() != null && item.getDescription().isBlank()) {
+            throw new ValidationException("Описание вещи не может быть пустым");
         }
     }
 
