@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking.service;
 
 import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingState;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 
 import java.util.Collection;
@@ -13,7 +14,7 @@ public interface BookingService {
 
     Booking findById(Long userId, Long bookingId);
 
-    Collection<Booking> findAllByBooker(Long userId, String state);
+    Collection<Booking> findAllByBooker(Long userId, BookingState state);
 
-    Collection<Booking> findAllByOwner(Long userId, String state);
+    Collection<Booking> findAllByOwner(Long userId, BookingState state);
 }

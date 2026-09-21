@@ -47,7 +47,7 @@ public class BookingController {
 
     @GetMapping
     public Collection<BookingDto> findAllByBooker(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                                  @RequestParam(defaultValue = "ALL") String state) {
+                                                  @RequestParam(defaultValue = "ALL") BookingState state) {
 
         return bookingService.findAllByBooker(userId, state)
                 .stream()
@@ -57,7 +57,7 @@ public class BookingController {
 
     @GetMapping("/owner")
     public Collection<BookingDto> findAllByOwner(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                                 @RequestParam(defaultValue = "ALL") String state) {
+                                                 @RequestParam(defaultValue = "ALL") BookingState state) {
 
         return bookingService.findAllByOwner(userId, state)
                 .stream()

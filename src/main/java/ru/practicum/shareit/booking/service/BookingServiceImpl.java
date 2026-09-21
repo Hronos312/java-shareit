@@ -1,12 +1,15 @@
 package ru.practicum.shareit.booking.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingState;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.booking.repository.BookingRepository;
+import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.model.Item;
@@ -19,6 +22,7 @@ import java.util.Collection;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
@@ -26,6 +30,7 @@ public class BookingServiceImpl implements BookingService {
     private final ItemRepository itemRepository;
 
     @Override
+    @Transactional
     public Booking create(Long userId, BookingRequestDto bookingRequestDto) {
 
         User booker = userRepository.findById(userId)
@@ -68,12 +73,13 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public Booking approve(Long userId, Long bookingId, Boolean approved) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование с id " + bookingId + " не найдено"));
 
         if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new ValidationException("Подтвердить бронирование может только владелец вещи");
+            throw new ForbiddenException("Подтвердить бронирование может только владелец вещи");
         }
 
         if (booking.getStatus() != BookingStatus.WAITING) {
@@ -94,73 +100,47 @@ public class BookingServiceImpl implements BookingService {
         Long ownerId = booking.getItem().getOwner().getId();
 
         if (!bookerId.equals(userId) && !ownerId.equals(userId)) {
-            throw new NotFoundException("Пользователь не имеет доступа к этому бронированию");
+            throw new ForbiddenException("Пользователь не имеет доступа к этому бронированию");
         }
 
         return booking;
     }
 
     @Override
-    public Collection<Booking> findAllByBooker(Long userId, String state) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
+    public Collection<Booking> findAllByBooker(Long userId, BookingState state) {
+        checkUserExists(userId);
 
-        BookingState bookingState;
-
-        try {
-            bookingState = BookingState.valueOf(state.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new ValidationException("Неизвестное состояние бронирования: " + state);
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-
-        return switch (bookingState) {
-            case ALL -> bookingRepository.findAllByBookerIdOrderByStartDesc(userId);
-
-            case CURRENT ->
-                    bookingRepository
-                            .findAllByBookerIdAndStartLessThanEqualAndEndGreaterThanEqualOrderByStartDesc(userId, now, now);
-
-            case PAST -> bookingRepository.findAllByBookerIdAndEndBeforeOrderByStartDesc(userId, now);
-
-            case FUTURE -> bookingRepository.findAllByBookerIdAndStartAfterOrderByStartDesc(userId, now);
-
-            case WAITING -> bookingRepository.findAllByBookerIdAndStatusOrderByStartDesc(userId, BookingStatus.WAITING);
-
-            case REJECTED -> bookingRepository.findAllByBookerIdAndStatusOrderByStartDesc(userId, BookingStatus.REJECTED);
-        };
+        return findBookings(userId, state, false);
     }
 
     @Override
-    public Collection<Booking> findAllByOwner(Long userId, String state) {
+    public Collection<Booking> findAllByOwner(Long userId, BookingState state) {
+        checkUserExists(userId);
+
+        return findBookings(userId, state, true);
+    }
+
+    private void checkUserExists(Long userId) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
+    }
 
-        BookingState bookingState;
-
-        try {
-            bookingState = BookingState.valueOf(state.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new ValidationException("Неизвестное состояние бронирования: " + state);
-        }
-
+    private Collection<Booking> findBookings(Long userId, BookingState state, boolean owner) {
         LocalDateTime now = LocalDateTime.now();
+        Sort sort = Sort.by(Sort.Direction.DESC, "start");
 
-        return switch (bookingState) {
-            case ALL -> bookingRepository.findAllByItemOwnerIdOrderByStartDesc(userId);
+        return switch (state) {
+            case ALL -> bookingRepository.findAllForUser(userId, owner, sort);
 
-            case CURRENT ->
-                    bookingRepository
-                            .findAllByItemOwnerIdAndStartLessThanEqualAndEndGreaterThanEqualOrderByStartDesc(userId, now, now);
+            case CURRENT -> bookingRepository.findCurrentForUser(userId, owner, now, sort);
 
-            case PAST -> bookingRepository.findAllByItemOwnerIdAndEndBeforeOrderByStartDesc(userId, now);
+            case PAST -> bookingRepository.findPastForUser(userId, owner, now, sort);
 
-            case FUTURE -> bookingRepository.findAllByItemOwnerIdAndStartAfterOrderByStartDesc(userId, now);
+            case FUTURE -> bookingRepository.findFutureForUser(userId, owner, now, sort);
 
-            case WAITING -> bookingRepository.findAllByItemOwnerIdAndStatusOrderByStartDesc(userId, BookingStatus.WAITING);
+            case WAITING -> bookingRepository.findByStatusForUser(userId, owner, BookingStatus.WAITING, sort);
 
-            case REJECTED -> bookingRepository.findAllByItemOwnerIdAndStatusOrderByStartDesc(userId, BookingStatus.REJECTED);
+            case REJECTED -> bookingRepository.findByStatusForUser(userId, owner, BookingStatus.REJECTED, sort);
         };
     }
 }

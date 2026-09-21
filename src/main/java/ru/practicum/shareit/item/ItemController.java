@@ -5,8 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.mapper.ItemMapper;
-import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
 
 import java.util.Collection;
@@ -17,24 +15,15 @@ import java.util.Collection;
 public class ItemController {
 
     private final ItemService itemService;
-    private final ItemMapper itemMapper;
 
     @PostMapping
     public ItemDto create(@RequestHeader("X-Sharer-User-Id") Long userId, @RequestBody ItemDto itemDto) {
-
-        Item item = itemMapper.toItem(itemDto);
-        Item createdItem = itemService.create(userId, item);
-
-        return itemMapper.toItemDto(createdItem);
+        return itemService.create(userId, itemDto);
     }
 
     @PatchMapping("/{itemId}")
     public ItemDto update(@RequestHeader("X-Sharer-User-Id") Long userId, @PathVariable Long itemId, @RequestBody ItemDto itemDto) {
-
-        Item updatedItem = itemMapper.toItem(itemDto);
-        Item item = itemService.update(userId, itemId, updatedItem);
-
-        return itemMapper.toItemDto(item);
+        return itemService.update(userId, itemId, itemDto);
     }
 
     @GetMapping("/{itemId}")
@@ -49,9 +38,7 @@ public class ItemController {
 
     @GetMapping("/search")
     public Collection<ItemDto> search(@RequestParam String text) {
-        return itemService.search(text).stream()
-                .map(itemMapper::toItemDto)
-                .toList();
+        return itemService.search(text);
     }
 
     @PostMapping("/{itemId}/comment")
