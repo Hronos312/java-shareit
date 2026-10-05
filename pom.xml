@@ -27,5 +27,10 @@
 		<module>gateway</module>
 		<module>server</module>
 	</modules>
+	<profiles>
+		<profile>
+			<id>check</id>
+		</profile>
+	</profiles>
 
 </project>
