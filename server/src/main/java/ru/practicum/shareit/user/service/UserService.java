@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.DuplicatedDataException;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
@@ -18,8 +17,6 @@ public class UserService {
     private final UserRepository userRepository;
 
     public User create(User user) {
-        validateEmail(user.getEmail());
-
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new DuplicatedDataException("Пользователь с таким email уже существует");
         }
@@ -53,13 +50,7 @@ public class UserService {
     public User update(Long id, User updatedUser) {
         User user = findById(id);
 
-        if (updatedUser.getName() != null && updatedUser.getName().isBlank()) {
-            throw new ValidationException("Имя пользователя не может быть пустым");
-        }
-
         if (updatedUser.getEmail() != null) {
-            validateEmail(updatedUser.getEmail());
-
             Optional<User> userWithSameEmail = userRepository.findByEmail(updatedUser.getEmail());
 
             if (userWithSameEmail.isPresent() && !userWithSameEmail.get().getId().equals(id)) {
@@ -76,16 +67,6 @@ public class UserService {
         }
 
         return userRepository.save(user);
-    }
-
-    private void validateEmail(String email) {
-        if (email == null || email.isBlank()) {
-            throw new ValidationException("Email не может быть пустым");
-        }
-
-        if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
-            throw new ValidationException("Некорректный email");
-        }
     }
 
 }

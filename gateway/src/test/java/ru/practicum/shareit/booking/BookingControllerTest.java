@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(BookingController.class)
@@ -182,6 +183,84 @@ class BookingControllerTest {
             throws Exception {
 
         mockMvc.perform(get("/bookings")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("from", "0")
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(bookingClient);
+    }
+
+    @Test
+    void findByIdShouldCallClient() throws Exception {
+        when(bookingClient.findById(1L, 5L))
+                .thenReturn(
+                        ResponseEntity.ok(
+                                java.util.Map.of(
+                                        "id", 5L,
+                                        "status", "WAITING"
+                                )
+                        )
+                );
+
+        mockMvc.perform(get("/bookings/5")
+                        .header("X-Sharer-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(5))
+                .andExpect(jsonPath("$.status")
+                        .value("WAITING"));
+
+        verify(bookingClient)
+                .findById(1L, 5L);
+    }
+
+    @Test
+    void findAllByOwnerShouldCallClient() throws Exception {
+        when(bookingClient.findAllByOwner(
+                1L,
+                BookingState.ALL,
+                0,
+                10
+        )).thenReturn(
+                ResponseEntity.ok(
+                        new Object[0]
+                )
+        );
+
+        mockMvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("state", "ALL")
+                        .param("from", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk());
+
+        verify(bookingClient)
+                .findAllByOwner(
+                        1L,
+                        BookingState.ALL,
+                        0,
+                        10
+                );
+    }
+
+    @Test
+    void findAllByOwnerShouldRejectNegativeFrom()
+            throws Exception {
+
+        mockMvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("from", "-1")
+                        .param("size", "10"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(bookingClient);
+    }
+
+    @Test
+    void findAllByOwnerShouldRejectZeroSize()
+            throws Exception {
+
+        mockMvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", 1L)
                         .param("from", "0")
                         .param("size", "0"))

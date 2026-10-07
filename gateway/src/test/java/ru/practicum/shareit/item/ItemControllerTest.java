@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ItemController.class)
@@ -135,5 +136,83 @@ class ItemControllerTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(itemClient);
+    }
+
+    @Test
+    void findByIdShouldCallClient() throws Exception {
+        when(itemClient.findById(1L, 5L))
+                .thenReturn(
+                        ResponseEntity.ok(
+                                java.util.Map.of(
+                                        "id", 5L,
+                                        "name", "Дрель",
+                                        "description", "Описание",
+                                        "available", true
+                                )
+                        )
+                );
+
+        mockMvc.perform(get("/items/5")
+                        .header("X-Sharer-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(5))
+                .andExpect(jsonPath("$.name").value("Дрель"));
+
+        verify(itemClient)
+                .findById(1L, 5L);
+    }
+
+    @Test
+    void findAllByOwnerShouldCallClient() throws Exception {
+        when(itemClient.findAllByOwner(1L))
+                .thenReturn(
+                        ResponseEntity.ok(
+                                java.util.List.of(
+                                        java.util.Map.of(
+                                                "id", 1L,
+                                                "name", "Дрель"
+                                        ),
+                                        java.util.Map.of(
+                                                "id", 2L,
+                                                "name", "Молоток"
+                                        )
+                                )
+                        )
+                );
+
+        mockMvc.perform(get("/items")
+                        .header("X-Sharer-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        verify(itemClient)
+                .findAllByOwner(1L);
+    }
+
+    @Test
+    void searchShouldCallClient() throws Exception {
+        when(itemClient.search("дрель"))
+                .thenReturn(
+                        ResponseEntity.ok(
+                                java.util.List.of(
+                                        java.util.Map.of(
+                                                "id", 1L,
+                                                "name", "Дрель"
+                                        )
+                                )
+                        )
+                );
+
+        mockMvc.perform(get("/items/search")
+                        .param("text", "дрель"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name")
+                        .value("Дрель"));
+
+        verify(itemClient)
+                .search("дрель");
     }
 }

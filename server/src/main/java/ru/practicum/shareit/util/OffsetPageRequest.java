@@ -10,6 +10,14 @@ public class OffsetPageRequest implements Pageable {
     private final Sort sort;
 
     public OffsetPageRequest(int offset, int pageSize, Sort sort) {
+        if (offset < 0) {
+            throw new IllegalArgumentException("Offset не может быть отрицательным");
+        }
+
+        if (pageSize <= 0) {
+            throw new IllegalArgumentException("Page size должен быть больше нуля");
+        }
+
         this.offset = offset;
         this.pageSize = pageSize;
         this.sort = sort;
