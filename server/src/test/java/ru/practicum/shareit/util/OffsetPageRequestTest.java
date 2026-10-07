@@ -1,6 +1,7 @@
 package ru.practicum.shareit.util;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,4 +60,54 @@ class OffsetPageRequestTest {
         )
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void shouldNavigateBetweenPages() {
+        Sort sort = Sort.by("start");
+
+        OffsetPageRequest pageable =
+                new OffsetPageRequest(10, 5, sort);
+
+        assertThat(pageable.getSort()).isEqualTo(sort);
+        assertThat(pageable.hasPrevious()).isTrue();
+
+        Pageable next = pageable.next();
+
+        assertThat(next.getOffset()).isEqualTo(15);
+        assertThat(next.getPageSize()).isEqualTo(5);
+
+        Pageable previous =
+                pageable.previousOrFirst();
+
+        assertThat(previous.getOffset()).isEqualTo(5);
+
+        Pageable first = pageable.first();
+
+        assertThat(first.getOffset()).isZero();
+
+        Pageable thirdPage =
+                pageable.withPage(3);
+
+        assertThat(thirdPage.getOffset()).isEqualTo(15);
+    }
+
+    @Test
+    void previousOrFirstShouldReturnFirstWhenNoPreviousPage() {
+        OffsetPageRequest pageable =
+                new OffsetPageRequest(
+                        0,
+                        10,
+                        Sort.unsorted()
+                );
+
+        assertThat(pageable.hasPrevious()).isFalse();
+
+        Pageable result =
+                pageable.previousOrFirst();
+
+        assertThat(result.getOffset()).isZero();
+        assertThat(result.getPageSize()).isEqualTo(10);
+    }
+
+
 }
